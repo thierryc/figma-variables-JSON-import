@@ -55,9 +55,10 @@ export function FileDropZone(props: UploadLinkProps) {
 export default FileDropZone
 
 const DropZone = styled.div`
-	border: 3px dashed var(--figma-color-border-disabled-strong, rgba(0, 0, 0, 0.3));
+	border: 1px dashed var(--figma-color-border, #e6e6e6);
 	padding: 2em;
 	background-color: var(--figma-color-bg-secondary, #f5f5f5);
+	margin-bottom: 8px;
 
 	* {
 		pointer-events: none;

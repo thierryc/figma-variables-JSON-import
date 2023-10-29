@@ -1,17 +1,52 @@
-import React from "react"
+import React, { useState } from "react"
 import styled from "styled-components"
 import { type JsonFile, type OperationResult, PluginContext } from "shared/collab"
 import { Disclosure } from "./Disclosure"
 import { FileDropZone } from "./FileDropZone"
 import { Import } from "./Icons"
 import { Content } from "./PluginLayout"
+import FileUpload from "./FileUpload"
+import Switch from "./Switch"
 
 export function MainPage() {
 	const Plugin = React.useContext(PluginContext)
 	const [results, setResults] = React.useState<OperationResult[]>([])
+	const [switchStatus, setSwitchStatus] = useState(false)
+
+	const handleSwitchChange = (newStatus: boolean) => {
+		setSwitchStatus(newStatus)
+	}
 
 	return (
 		<>
+			{/* <Content>
+				<Horizontal>
+					<span onClick={() => setSwitchStatus(!switchStatus)}>Set Local Variables on drop</span>
+					<Switch checked={switchStatus} onChange={handleSwitchChange} />
+				</Horizontal>
+			</Content> */}
+			<Content>
+				<FileDropZone accept="application/json" onFileChosen={onFileChosen}>
+					<Horizontal>
+						<Import />
+						<div>Mmmm, files. Yummy.</div>
+					</Horizontal>
+				</FileDropZone>
+				<Horizontal>
+					<FileUpload accept="application/json" onFileChosen={onFileChosen}></FileUpload>
+				</Horizontal>
+			</Content>
+			<Content>
+				{results.length > 0 && <h2>Results</h2>}
+				<ResultsList>
+					{results.map((result, i) => (
+						<Result key={i}>
+							<ResultIcon>{result.result === "error" ? "❌" : ""}</ResultIcon>
+							<ResultText>{result.text}</ResultText>
+						</Result>
+					))}
+				</ResultsList>
+			</Content>
 			<Content>
 				<h2>Import token JSON files</h2>
 				<p>Hello! I am here to help you turn token JSON into Figma variables.</p>
@@ -47,25 +82,6 @@ export function MainPage() {
 					</NarrowTabsPre>
 				</Disclosure>
 				<p>The files never leave your computer.</p>
-			</Content>
-			<Content>
-				<FileDropZone accept="application/json" onFileChosen={onFileChosen}>
-					<Horizontal>
-						<Import />
-						<div>Mmmm, files. Yummy.</div>
-					</Horizontal>
-				</FileDropZone>
-			</Content>
-			<Content>
-				{results.length > 0 && <h2>Results</h2>}
-				<ResultsList>
-					{results.map((result, i) => (
-						<Result key={i}>
-							<ResultIcon>{result.result === "error" ? "❌" : ""}</ResultIcon>
-							<ResultText>{result.text}</ResultText>
-						</Result>
-					))}
-				</ResultsList>
 			</Content>
 		</>
 	)
