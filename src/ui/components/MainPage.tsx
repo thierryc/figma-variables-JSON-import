@@ -11,21 +11,26 @@ import Switch from "./Switch"
 export function MainPage() {
 	const Plugin = React.useContext(PluginContext)
 	const [results, setResults] = React.useState<OperationResult[]>([])
-	const [switchStatus, setSwitchStatus] = useState(false)
+	// By default, dry mode is disabled to preserve the original behavior
+	// It can be enabled for safer script testing and validation.
+	const [dry, setDry] = useState(false)
 
 	const handleSwitchChange = (newStatus: boolean) => {
-		setSwitchStatus(newStatus)
+		setDry(newStatus)
 	}
 
 	return (
 		<>
-			{/* <Content>
-				<Horizontal>
-					<span onClick={() => setSwitchStatus(!switchStatus)}>Set Local Variables on drop</span>
-					<Switch checked={switchStatus} onChange={handleSwitchChange} />
-				</Horizontal>
-			</Content> */}
 			<Content>
+				<HorizontalRight>
+					<span
+						onClick={() => setDry(!dry)}
+						title="Use dry mode to simulate script execution without making actual changes, providing a safe way to verify behavior and identify potential issues."
+					>
+						Dry Run: Test Execution without Making Changes.
+					</span>
+					<Switch checked={dry} onChange={handleSwitchChange} />
+				</HorizontalRight>
 				<FileDropZone accept="application/json" onFileChosen={onFileChosen}>
 					<Horizontal>
 						<Import />
@@ -35,22 +40,36 @@ export function MainPage() {
 				<Horizontal>
 					<FileUpload accept="application/json" onFileChosen={onFileChosen}></FileUpload>
 				</Horizontal>
-			</Content>
-			<Content>
-				{results.length > 0 && <h2>Results</h2>}
-				<ResultsList>
-					{results.map((result, i) => (
-						<Result key={i}>
-							<ResultIcon>{result.result === "error" ? "❌" : ""}</ResultIcon>
-							<ResultText>{result.text}</ResultText>
-						</Result>
-					))}
-				</ResultsList>
-			</Content>
-			<Content>
+
+				{results.length > 0 && (
+					<>
+						<h2>Results</h2>
+						<ResultsList>
+							{results.map((result, i) => {
+								if (result.result !== "log") {
+									return (
+										<Result key={i}>
+											<ResultIcon>{result.result === "error" ? "❌" : ""}</ResultIcon>
+											<ResultText>{result.text}</ResultText>
+										</Result>
+									)
+								}
+								return (
+									<Result key={i}>
+										<ResultText>
+											<pre>
+												<code>{result.text}</code>
+											</pre>
+										</ResultText>
+									</Result>
+								)
+							})}
+						</ResultsList>
+					</>
+				)}
 				<h2>Import token JSON files</h2>
 				<p>Hello! I am here to help you turn token JSON into Figma variables.</p>
-				<p>Drag some files into the box below:</p>
+				<p>Drag some files into the box above:</p>
 				<ul>
 					<li>
 						JSON files in the{" "}
@@ -90,9 +109,9 @@ export function MainPage() {
 		const fileList: JsonFile[] = []
 		const newResults: OperationResult[] = []
 
-		try {
-			setResults([{ result: "info", text: "Thinking..." }])
+		setResults([{ result: "info", text: "Thinking..." }])
 
+		try {
 			for (const file of files) {
 				try {
 					const fileContents = await file.text()
@@ -102,7 +121,7 @@ export function MainPage() {
 				}
 			}
 
-			if (fileList.length) newResults.push(...(await Plugin.importFiles(fileList)))
+			if (fileList.length) newResults.push(...(await Plugin.importFiles(fileList, dry)))
 
 			setResults(newResults)
 		} catch (ex) {
@@ -125,6 +144,14 @@ const Horizontal = styled.div`
 	gap: 1em;
 	align-items: center;
 	justify-content: center;
+`
+
+const HorizontalRight = styled.div`
+	display: flex;
+	gap: 0.5em;
+	align-items: center;
+	justify-content: flex-end;
+	margin-bottom: 1em;
 `
 
 const NarrowTabsPre = styled.pre`

@@ -4,10 +4,17 @@ import { type JsonToken, type JsonTokenDocument, type JsonManifest, allTokenNode
 import type { JsonTokenType } from "utils/tokens/types"
 import { getAliasTargetName } from "utils/tokens/utils"
 
+
 /** For a given token name in the DTCG format, return a valid token name in the Figma format. */
 function tokenNameToFigmaName(name: string): string {
 	return name.replaceAll(".", "/")
 }
+
+/** For a given token name in the DTCG format, return a valid token name in the Figma format. */
+function figmaNameToTokenName(name: string): string {
+	return name.replaceAll("/", ".")
+}
+
 
 /** For a given token $type in the DTCG format, return the corresponding Figma token type, or null if there isn't one. */
 function tokenTypeToFigmaType($type: JsonTokenType): VariableResolvedDataType | null {
@@ -118,7 +125,7 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 			if (!figmaType) {
 				results.push({
 					result: "info",
-					text: `Unable to add ${update.figmaName} mode ${update.modeName} because ${update.token.$type} tokens aren‘t supported.`,
+					text: `Unable to add "${figmaNameToTokenName(update.figmaName)}" mode ${update.modeName} because ${update.token.$type} tokens aren‘t supported.`,
 				})
 				continue
 			}
@@ -212,7 +219,7 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 						else
 							results.push({
 								result: "error",
-								text: `Invalid ${update.token.$type}: ${update.figmaName} = ${JSON.stringify(value)}`,
+								text: `Invalid ${update.token.$type}: "${figmaNameToTokenName(update.figmaName)}" ${update.figmaName} = ${JSON.stringify(value)}`,
 							})
 						break
 					}
@@ -264,7 +271,7 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 		for (const missing of queuedUpdates) {
 			results.push({
 				result: "error",
-				text: `Unable to add ${missing.figmaName} mode ${missing.modeName} because it is an alias of ${tokenNameToFigmaName(
+				text: `Unable to add "${figmaNameToTokenName(missing.figmaName)}" mode ${missing.modeName} because it is an alias of ${tokenNameToFigmaName(
 					getAliasTargetName(missing.token.$value) || "another token"
 				)} but ${isTeamLibraryAvailable ? "that doesn‘t exist" : "it wasn‘t found—it may be in a different file"}.`,
 			})

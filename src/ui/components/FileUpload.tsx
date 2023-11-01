@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useRef } from "react"
 import styled from "styled-components"
 
 interface FileDropZoneProps {
@@ -7,9 +7,21 @@ interface FileDropZoneProps {
 }
 
 function FileUpload({ accept, onFileChosen }: FileDropZoneProps) {
+	const inputFileRef = useRef<HTMLInputElement | null>(null)
 	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const files = (event.target as HTMLInputElement).files
-		if (files) onFileChosen(files)
+		const element = event.target as HTMLInputElement
+		const files = element.files
+		if (files) {
+			onFileChosen(files)
+		}
+	}
+
+	const handleFileActive = () => {
+		// to reset the input element state before to upload the files
+		if (inputFileRef.current) {
+			const element = inputFileRef.current as HTMLInputElement
+			element.files = new DataTransfer().files
+		}
 	}
 
 	return (
@@ -19,6 +31,8 @@ function FileUpload({ accept, onFileChosen }: FileDropZoneProps) {
 				accept={accept} // Specify the allowed file types
 				multiple
 				onChange={handleFileChange}
+				ref={inputFileRef}
+				onClick={handleFileActive}
 			/>
 			<ButtonText>Choose files</ButtonText>
 		</ButtonContainer>

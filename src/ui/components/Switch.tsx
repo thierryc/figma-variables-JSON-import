@@ -34,7 +34,7 @@ const SwitchSlider = styled.span`
 		width: calc(var(--size, 30px) - 4px);
 		left: 2px;
 		bottom: 2px;
-		background-color: #fff;
+		background-color: var(--figma-color-icon-oninverse, rgba(255, 255, 255, 0.9));
 		border-radius: 50%;
 		transition: transform 0.2s;
 	}
