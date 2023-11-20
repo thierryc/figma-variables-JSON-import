@@ -19,6 +19,38 @@ export function MainPage() {
 		setDry(newStatus)
 	}
 
+	async function onFileChosen(files: FileList) {
+		const fileList: JsonFile[] = []
+		const newResults: OperationResult[] = []
+
+		setResults([{ result: "info", text: "Thinking..." }])
+
+		try {
+			for (const file of files) {
+				try {
+					const fileContents = await file.text()
+					fileList.push({ name: file.name, text: fileContents })
+				} catch (ex) {
+					newResults.push({ result: "error", text: `Failed to read the contents of ${file.name}.` })
+				}
+			}
+
+			if (fileList.length) newResults.push(...(await Plugin.importFiles(fileList, dry)))
+
+			setResults(newResults)
+		} catch (ex) {
+			console.error(ex)
+			newResults.push({
+				result: "error",
+				text: `Failed to import the token files: ${
+					(ex && ((typeof ex === "object" && "message" in ex && ex.message) || (typeof ex === "string" && ex))) ||
+					"no further details available"
+				}`,
+			})
+			setResults(newResults)
+		}
+	}
+
 	return (
 		<>
 			<Content>
@@ -49,7 +81,10 @@ export function MainPage() {
 								if (result.result !== "log") {
 									return (
 										<Result key={i}>
-											<ResultIcon>{result.result === "error" ? "❌" : ""}</ResultIcon>
+											<ResultIcon>
+												{result.result === "error" ? "❌" : ""}
+												{result.result === "warning" ? "🔥" : ""}
+											</ResultIcon>
 											<ResultText>{result.text}</ResultText>
 										</Result>
 									)
@@ -104,38 +139,6 @@ export function MainPage() {
 			</Content>
 		</>
 	)
-
-	async function onFileChosen(files: FileList) {
-		const fileList: JsonFile[] = []
-		const newResults: OperationResult[] = []
-
-		setResults([{ result: "info", text: "Thinking..." }])
-
-		try {
-			for (const file of files) {
-				try {
-					const fileContents = await file.text()
-					fileList.push({ name: file.name, text: fileContents })
-				} catch (ex) {
-					newResults.push({ result: "error", text: `Failed to read the contents of ${file.name}.` })
-				}
-			}
-
-			if (fileList.length) newResults.push(...(await Plugin.importFiles(fileList, dry)))
-
-			setResults(newResults)
-		} catch (ex) {
-			console.error(ex)
-			newResults.push({
-				result: "error",
-				text: `Failed to import the token files: ${
-					(ex && ((typeof ex === "object" && "message" in ex && ex.message) || (typeof ex === "string" && ex))) ||
-					"no further details available"
-				}`,
-			})
-			setResults(newResults)
-		}
-	}
 }
 export default MainPage
 

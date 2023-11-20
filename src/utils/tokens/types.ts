@@ -32,3 +32,21 @@ type JsonTokenPrimitiveType = "string" | "number" | "boolean" | "object" | "arra
 type JsonTokenBasicType = "color" | "dimension" | "fontFamily" | "fontWeight" | "duration" | "cubicBezier"
 type JsonTokenCompositeType = "strokeStyle" | "border" | "transition" | "shadow" | "gradient" | "typography"
 export type JsonTokenType = JsonTokenPrimitiveType | JsonTokenBasicType | JsonTokenCompositeType
+
+
+export interface ModeForImportedTokens {
+	[propertyName: string]: JsonToken;
+}
+
+export interface ImportedVariable {
+	collectionName: string;
+	name: string;
+	errors: { code: string; message: string }[];
+	isAlias?: boolean;
+	targetName?: string;
+	modes?: ModeForImportedTokens;
+}
+
+export interface ImportedVariables {
+	[propertyName: string]: ImportedVariable;
+}

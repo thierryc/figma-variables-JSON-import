@@ -13,6 +13,7 @@
 		"analyze": "npx webpack --mode production --profile --json > profile.json && npx webpack-bundle-analyzer profile.json build",
 		"build": "npx webpack --mode production",
 		"build:watch": "npx webpack --mode development --watch",
+		"dev": "npm run build:watch",
 		"lint": "npx eslint",
 		"prettier:format": "npx prettier --write 'src/**/*.{js,jsx,ts,tsx,css,json}'"
 	},

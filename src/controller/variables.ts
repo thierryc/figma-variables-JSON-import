@@ -1,9 +1,8 @@
 import type { OperationResult } from "shared/collab"
 import { jsonColorToFigmaColor } from "utils/color"
 import { type JsonToken, type JsonTokenDocument, type JsonManifest, allTokenNodes } from "utils/tokens"
-import type { JsonTokenType } from "utils/tokens/types"
+import type { JsonTokenType, ImportedVariables } from "utils/tokens/types"
 import { getAliasTargetName } from "utils/tokens/utils"
-
 
 /** For a given token name in the DTCG format, return a valid token name in the Figma format. */
 function tokenNameToFigmaName(name: string): string {
@@ -14,7 +13,6 @@ function tokenNameToFigmaName(name: string): string {
 function figmaNameToTokenName(name: string): string {
 	return name.replaceAll("/", ".")
 }
-
 
 /** For a given token $type in the DTCG format, return the corresponding Figma token type, or null if there isn't one. */
 function tokenTypeToFigmaType($type: JsonTokenType): VariableResolvedDataType | null {
@@ -34,14 +32,64 @@ function tokenTypeToFigmaType($type: JsonTokenType): VariableResolvedDataType | 
 	}
 }
 
+type StringArraysDiff = {
+	added: string[];
+	updated: string[];
+	removed: string[];
+};
+
+function getArraysDiff(oldArray: string[], newArray: string[]): StringArraysDiff {
+	const added: string[] = [];
+	const updated: string[] = [];
+	const removed: string[] = [];
+
+	// Check for added and updated strings
+	newArray.forEach((item) => {
+		if (!oldArray.includes(item)) {
+			added.push(item);
+		} else {
+			updated.push(item);
+		}
+	});
+
+	// Check for removed strings
+	oldArray.forEach((item) => {
+		if (!newArray.includes(item)) {
+			console.log('Removing', item);
+			removed.push(item);
+		}
+	});
+
+	return { added, updated, removed };
+}
+
+type ExtractedProperties<T> = {
+	[K in keyof T]?: T[K];
+};
+
+function extractProperties<T extends object>(obj: T, propertyNames: (keyof T)[]): ExtractedProperties<T> {
+	const result: ExtractedProperties<T> = {};
+
+	propertyNames.forEach((propertyName) => {
+		if (obj.hasOwnProperty(propertyName)) {
+			result[propertyName] = obj[propertyName];
+		}
+	});
+
+	return result;
+}
+
 interface QueuedUpdate {
 	figmaName: string
+	tokenName: string
 	token: JsonToken
 	collectionName: string
 	modeName: string
 }
 
-export async function importTokens(files: Record<string, JsonTokenDocument>, manifest?: JsonManifest): Promise<OperationResult[]> {
+
+
+export async function importTokens(files: Record<string, JsonTokenDocument>, manifest?: JsonManifest, dry: boolean = true): Promise<OperationResult[]> {
 	if (!figma.variables) {
 		return [
 			{
@@ -52,6 +100,58 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 	}
 
 	const results: OperationResult[] = []
+	const collections: Record<string, VariableCollection | LibraryVariableCollection> = {};
+	const localVariables: Record<string, Variable> = {};
+	const libVariables: Record<string, LibraryVariable> = {};
+
+	// get local variables collections from figma
+	const localCollections = figma.variables.getLocalVariableCollections();
+	const variablesArray = figma.variables.getLocalVariables();
+	for (const collection of localCollections) {
+		if (!collections[collection.name]) {
+			collections[collection.name] = collection;
+		} else {
+			results.push({ result: "warning", text: `The collection named "${collection.name} [${collection.id}]" already exists locally. Please remove or rename duplicated collection entries to avoid conflicts.` });
+		}
+	}
+
+	for (const variable of variablesArray) {
+		const name = figmaNameToTokenName(variable.name)
+		if (!localVariables[name]) {
+			localVariables[name] = variable;
+		} else {
+			let collection = figma.variables.getVariableCollectionById(variable.variableCollectionId);
+			if (!collection) {
+				collection = { name: "unknown" } as VariableCollection;
+			}
+			results.push({ result: "warning", text: `The variable "${variable.name} [${variable.id}]" in the local "${collection.name} [${collection.id}]" collection already exists . Please remove or rename duplicated variable entries to avoid conflicts.` });
+		}
+	}
+
+	// get remote variables collections from figma
+	const remoteCollections = figma.teamLibrary ? await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync() : [];
+	// console.log(remoteCollections);
+	// Remote / team library variables
+	for (const collection of remoteCollections) {
+		if (collections[collection.name]) {
+			results.push({ result: "warning", text: `The remote collection named "${collection.name}" in the library "${collection.libraryName}" already exists locally or in another library. Please remove or rename duplicate collection entries to avoid conflicts.` })
+		}
+		collections[collection.name] = collection;
+		const remoteVariablesArray = await figma.teamLibrary.getVariablesInLibraryCollectionAsync(collection.key);
+		for (const variable of remoteVariablesArray) {
+			const name = figmaNameToTokenName(variable.name)
+			if (libVariables[name]) {
+				results.push({ result: "warning", text: `The variable "${variable.name}" in the "${collection.name}" collection library already exists in an other variables librairy. Please remove or rename duplicated variable entries to avoid conflicts.` });
+			} else if (localVariables[name]) {
+				// console.log(variable, collection);
+				results.push({ result: "warning", text: `The variable "${variable.name}" in the "${collection.name}" collection library already exists in the local variables. Please remove or rename duplicated variable entries to avoid conflicts.` });
+			} else {
+				libVariables[name] = variable;
+			}
+		}
+	}
+
+	const variables: Record<string, Variable | LibraryVariable> = Object.assign({}, localVariables, libVariables);
 
 	// If a manifest wasn't supplied, invent a basic one before starting.
 	if (!manifest) {
@@ -69,54 +169,143 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 		}
 	}
 
-	// First, we need to know what variables are already present, so we can update them if necessary.
-	const collections: Record<string, VariableCollection | LibraryVariableCollection> = {}
-	const variables: Record<string, Variable | LibraryVariable> = {}
-
-	{
-		// Remote / team library variables
-		const remoteCollectionsArray = figma.teamLibrary ? await figma.teamLibrary.getAvailableLibraryVariableCollectionsAsync() : []
-		for (const collection of remoteCollectionsArray) {
-			collections[collection.name] = collection
-			const variablesArray = await figma.teamLibrary.getVariablesInLibraryCollectionAsync(collection.key)
-			for (const variable of variablesArray) variables[variable.name] = variable
-		}
-
-		// Local variables
-		const collectionsArray = figma.variables.getLocalVariableCollections()
-		for (const collection of collectionsArray) collections[collection.name] = collection
-		const variablesArray = figma.variables.getLocalVariables()
-		for (const variable of variablesArray) variables[variable.name] = variable
-	}
-
-	// Aliases can't be created until their target is, and we might see the alias before the target. So we have to maintain a queue
-	// of tokens to add and update, and go through it multiple times.
-	let queuedUpdates: QueuedUpdate[] = []
+	// create imported varaible object
+	const importedVariables: ImportedVariables = {};
+	const importedVariablesOnError: ImportedVariables = {};
 
 	for (const collectionName in manifest.collections) {
 		const collection = manifest.collections[collectionName]
-		for (const modeName in collection.modes) {
-			const modeFilenames = collection.modes[modeName]
-			for (const filename of modeFilenames) {
-				const document = files[filename]
-				if (document) {
-					for (const [name, token] of allTokenNodes(document)) {
-						queuedUpdates.push({ figmaName: tokenNameToFigmaName(name), collectionName, modeName, token })
+		if (collection.modes) {
+			for (const modeName in collection.modes) {
+				const modeFilenames = collection.modes[modeName]
+				for (const filename of modeFilenames) {
+					const document = files[filename]
+					if (document) {
+						for (const [name, token] of allTokenNodes(document)) {
+							const figmaType = tokenTypeToFigmaType(token.$type);
+							if (!figmaType) {
+								if (!importedVariablesOnError[name]) {
+									importedVariablesOnError[name] = {
+										collectionName,
+										name,
+										errors: [],
+										isAlias: false,
+										modes: {}
+									}
+								}
+								importedVariablesOnError[name].errors.push({ code: 'type', message: `${token.$type} is type not supported` });
+							} else {
+								let currentVariables = importedVariables[name];
+								if (!currentVariables) {
+									currentVariables = {
+										collectionName,
+										name,
+										errors: [],
+										isAlias: false,
+										modes: {}
+									}
+								}
+								if (currentVariables.modes && currentVariables.modes[modeName]) {
+									importedVariablesOnError[name].errors.push({ code: 'duplicated', message: `${collectionName}, ${name}, ${modeName} alredy exist` })
+								} else {
+									if (currentVariables.modes) {
+										currentVariables.modes[modeName] = token;
+									}
+									const targetName = getAliasTargetName(token.$value)
+									if (targetName) {
+										currentVariables.isAlias = true;
+										currentVariables.targetName = targetName;
+									}
+									importedVariables[name] = currentVariables;
+								}
+							}
+						}
+					} else {
+						// send error messages to the messager...
 					}
-				} else {
-					results.push({
-						result: "error",
-						text: `The manifest mentioned ${filename} but you didn‘t give me that file, so I skipped it.`,
-					})
 				}
+			}
+		}
+	}
+
+
+	// console.log('importedVariables: ', importedVariables);
+
+	const diff = getArraysDiff(Object.keys(variables), Object.keys(importedVariables));
+	// console.log("Added:", Object.keys(diff.added).length, diff.added);
+	// console.log("Updated:", Object.keys(diff.updated).length, diff.updated);
+	// console.log("removed:", Object.keys(diff.removed).length, diff.removed);
+	// console.log("OnError:", Object.keys(importedVariablesOnError).length, importedVariablesOnError);
+	// return remoteVariables;
+
+	const tokensToUpdate = Object.assign({}, extractProperties(importedVariables, [...diff.added, ...diff.updated]);
+
+	if (dry) {
+		const localDiff = getArraysDiff(Object.keys(localVariables), Object.keys(importedVariables));
+		console.log(diff.added);
+		results.push({
+			result: "info",
+			text: `Figma variables to add: ${diff.added.length}`,
+		})
+
+		/* for (const element of localDiff.added) {
+			results.push({
+				result: "log",
+				text: `${element} will be added`,
+			})
+		} */
+
+		results.push({
+			result: "info",
+			text: `Figma variables to update: ${diff.updated.length}`,
+		})
+
+		/* for (const element of localDiff.updated) {
+			results.push({
+				result: "log",
+				text: `${element} will be updated`,
+			})
+		} */
+
+		results.push({
+			result: "warning",
+			text: `Figma variables in the local Librairies not included in this import: ${localDiff.removed.length}`,
+		})
+
+		for (const element of localDiff.removed) {
+			results.push({
+				result: "log",
+				text: `${element} is not in this import`,
+			})
+		}
+
+		// results.push({
+		// 	result: "info",
+		// 	text: `Total of imported tokens: ${Object.keys(tokensToUpdate).length}`,
+		// })
+
+		return results;
+	}
+
+	let queuedUpdates: QueuedUpdate[] = [];
+
+	for (const key in importedVariables) {
+		const t = tokensToUpdate[key];
+		if (t) {
+			const tokenName = t.name;
+			const collectionName = t.collectionName;
+			for (const modeName in t.modes) {
+				const token = t.modes[modeName];
+				queuedUpdates.push({ figmaName: tokenNameToFigmaName(t.name), tokenName, collectionName, modeName, token });
 			}
 		}
 	}
 
 	// Now keep processing the queue of token updates until we make it through a whole iteration without accomplishing anything.
 	let variablesCreated = 0,
-		otherUpdatesCount = 0
-	let keepGoing: boolean
+		otherUpdatesCount = 0;
+	let keepGoing: boolean;
+
 	do {
 		keepGoing = false
 		const retryNextTime: typeof queuedUpdates = []
@@ -134,8 +323,8 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 			const targetName = getAliasTargetName(update.token.$value)
 			let targetVariable: Variable | LibraryVariable | undefined = undefined
 			if (targetName) {
-				const targetFigmaName = tokenNameToFigmaName(targetName)
-				targetVariable = variables[targetFigmaName]
+				// const targetFigmaName = tokenNameToFigmaName(targetName)
+				targetVariable = variables[targetName]
 				if (!targetVariable) {
 					// This is an alias to a variable that hasn't been created yet, so we can't process it right now.
 					// Save it for next iteration.
@@ -149,7 +338,8 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 			// Okay, this either isn't an alias, or it's an alias to something that indeed exists, so we can continue.
 			// If the variable doesn't exist yet, create it now.
 			let collection: VariableCollection | LibraryVariableCollection
-			let variable: Variable | LibraryVariable | undefined = variables[update.figmaName]
+
+			let variable: Variable | LibraryVariable | undefined = variables[figmaNameToTokenName(update.figmaName)]
 			let modeId: string | undefined = undefined
 			if (!variable) {
 				// This variable doesn't exist yet. First, create its collection and mode if necessary.
@@ -167,10 +357,9 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 					})
 					continue
 				}
-
 				// Then we can create the variable itself.
-				variable = figma.variables.createVariable(update.figmaName, collection.id, figmaType)
-				variables[update.figmaName] = variable
+				variable = figma.variables.createVariable(update.figmaName, collection.id, figmaType);
+				variables[update.tokenName] = variable
 				variablesCreated++
 			} else if (!("id" in variable)) {
 				results.push({ result: "error", text: `Failed to update ${update.figmaName} because it‘s defined in a different library.` })
@@ -253,6 +442,19 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 				}
 			}
 
+			if (update.token.$extensions && update.token.$extensions["com.figma"] && update.token.$extensions["com.figma"].codeSyntax) {
+				const codeSyntaxObj = update.token.$extensions["com.figma"].codeSyntax;
+				if (codeSyntaxObj['WEB']) {
+					variable.setVariableCodeSyntax('WEB', codeSyntaxObj['WEB'])
+				}
+				if (codeSyntaxObj['ANDROID']) {
+					variable.setVariableCodeSyntax('ANDROID', codeSyntaxObj['ANDROID'])
+				}
+				if (codeSyntaxObj['iOS']) {
+					variable.setVariableCodeSyntax('iOS', codeSyntaxObj['iOS'])
+				}
+			}
+
 			// Any time we successfully make any updates, we need to loop again unless we completely finish.
 			keepGoing = true
 		}
@@ -280,7 +482,7 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 
 	if ((variablesCreated || otherUpdatesCount) && results.length)
 		results.push({
-			result: "error",
+			result: "warning",
 			text: `${variablesCreated} variables were created and ${otherUpdatesCount} other updates were made, but ${results.length} had errors. Not great, not terrible.`,
 		})
 	else if (variablesCreated || otherUpdatesCount)
