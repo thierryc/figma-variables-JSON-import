@@ -240,7 +240,6 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 			// Also, the scopes property is not available for strings and booleans.
 			if (variable.resolvedType === "COLOR" || variable.resolvedType === "FLOAT") {
 				if (update.token.$extensions && update.token.$extensions["com.figma"] && update.token.$extensions["com.figma"].scopes) {
-					console.log(update.token.$name, update.token.$extensions["com.figma"].scopes);
 					variable.scopes = update.token.$extensions["com.figma"].scopes
 				} else {
 					variable.scopes = variable.scopes || ["ALL_SCOPES"]
