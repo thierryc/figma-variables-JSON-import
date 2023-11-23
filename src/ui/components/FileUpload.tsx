@@ -6,7 +6,7 @@ interface FileDropZoneProps {
 	onFileChosen: (files: FileList) => void
 }
 
-function FileUpload({ accept, onFileChosen }: FileDropZoneProps) {
+function FileUpload({ onFileChosen }: FileDropZoneProps) {
 	const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		const files = (event.target as HTMLInputElement).files
 		if (files) onFileChosen(files)
@@ -14,13 +14,8 @@ function FileUpload({ accept, onFileChosen }: FileDropZoneProps) {
 
 	return (
 		<ButtonContainer>
-			<input
-				type="file"
-				accept={accept} // Specify the allowed file types
-				multiple
-				onChange={handleFileChange}
-			/>
-			<ButtonText>Choose files</ButtonText>
+			<input type="file" id="filepicker" name="fileList" webkitdirectory multiple onChange={handleFileChange} />
+			<ButtonText>Choose Folder</ButtonText>
 		</ButtonContainer>
 	)
 }

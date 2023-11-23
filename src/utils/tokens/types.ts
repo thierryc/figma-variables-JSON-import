@@ -22,6 +22,7 @@ export interface JsonTokenChildren {
 export type JsonTokenValue = any
 
 export interface JsonToken {
+	$name: string
 	$type: JsonTokenType
 	$value: JsonTokenValue
 	$description?: string
