@@ -9,6 +9,23 @@ function tokenNameToFigmaName(name: string): string {
 	return name.replaceAll(".", "/")
 }
 
+function fontWeightToString(fontWeight: any) {
+	if (!fontWeight) return "regular"; // Return "regular" if input is empty or falsy
+	const value = parseInt(fontWeight) || fontWeight;
+	switch (value) {
+		case 300:
+			return "light";
+		case 400:
+			return "regular";
+		case 500:
+			return "medium";
+		case 600:
+			return "bold";
+		default:
+			return fontWeight; // Return input data if not recognized
+	}
+}
+
 /** For a given token $type in the DTCG format, return the corresponding Figma token type, or null if there isn't one. */
 function tokenTypeToFigmaType($type: JsonTokenType): VariableResolvedDataType | null {
 	switch ($type) {
@@ -16,10 +33,19 @@ function tokenTypeToFigmaType($type: JsonTokenType): VariableResolvedDataType | 
 			return "COLOR"
 		case "dimension":
 		case "duration":
+		case "fontSize":
+		case "lineHeight":
+		case "letterSpacing":
+		case "paragraphIndent":
+		case "paragraphSpacing":
 		case "number":
 			return "FLOAT"
 		case "boolean":
 			return "BOOLEAN"
+		case "fontFamily":
+		case "textCase":
+		case "textDecoration":
+		case "fontWeight":
 		case "string":
 			return "STRING"
 		default:
@@ -206,6 +232,11 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 					}
 					case "dimension":
 					case "duration":
+					case "fontSize":
+					case "lineHeight":
+					case "letterSpacing":
+					case "paragraphIndent":
+					case "paragraphSpacing":
 					case "number": {
 						const float = typeof value === "number" ? value : parseFloat(value)
 						if (!isNaN(float)) variable.setValueForMode(modeId, float)
@@ -224,12 +255,23 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 								text: `Invalid ${update.token.$type}: ${update.figmaName} = ${JSON.stringify(value)}`,
 							})
 						break
+					case "fontWeight":
+						variable.setValueForMode(modeId, fontWeightToString(value))
+						break;
+					case "textCase":
+					case "textDecoration":
+					case "fontFamily":
 					case "string":
-						variable.setValueForMode(modeId, value)
+						if (typeof value === "string") variable.setValueForMode(modeId, value)
+						else
+							results.push({
+								result: "error",
+								text: `Invalid ${update.token.$type}: ${update.figmaName} = ${JSON.stringify(value)}`,
+							})
 						break
 					default:
 						throw new Error(
-							`Failed to update a variable of type ${update.token.$type}. tokenTypeToFigmaType probably needs to be updated.`
+							`Failed to update a variable of type ${update.token.$type}. tokenTypeToFigmaType probably needs to be updated.  ${value} ${typeof value}`
 						)
 				}
 			}
@@ -238,12 +280,17 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 
 			// Important: This syntax is a hack specific to this plugin and is not a part of the standard or Figma plans.
 			// Also, the scopes property is not available for strings and booleans.
-			if (variable.resolvedType === "COLOR" || variable.resolvedType === "FLOAT") {
+			if (variable.resolvedType === "COLOR" || variable.resolvedType === "FLOAT" || variable.resolvedType === "STRING") {
 				if (update.token.$extensions && update.token.$extensions["com.figma"] && update.token.$extensions["com.figma"].scopes) {
 					variable.scopes = update.token.$extensions["com.figma"].scopes
 				} else {
 					variable.scopes = variable.scopes || ["ALL_SCOPES"]
 				}
+			}
+
+			// hiddenFromPublishing
+			if (update.token.$extensions && update.token.$extensions["com.figma"] && update.token.$extensions["com.figma"].hiddenFromPublishing) {
+				variable.hiddenFromPublishing = update.token.$extensions["com.figma"].hiddenFromPublishing
 			}
 
 			// Any time we successfully make any updates, we need to loop again unless we completely finish.
