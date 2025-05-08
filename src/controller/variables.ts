@@ -293,6 +293,26 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 				variable.hiddenFromPublishing = update.token.$extensions["com.figma"].hiddenFromPublishing
 			}
 
+			if (update.token.$extensions
+				&& update.token.$extensions["com.figma"]
+				&& update.token.$extensions["com.figma"].codeSyntax
+			) {
+				if (update.token.$extensions["com.figma"].codeSyntax.WEB) {
+					variable.setVariableCodeSyntax('WEB', update.token.$extensions["com.figma"].codeSyntax.WEB)
+				}
+				if (update.token.$extensions["com.figma"].codeSyntax.ANDROID) {
+					variable.setVariableCodeSyntax('ANDROID', update.token.$extensions["com.figma"].codeSyntax.ANDROID)
+				}
+				if (update.token.$extensions["com.figma"].codeSyntax.iOS) {
+					variable.setVariableCodeSyntax('iOS', update.token.$extensions["com.figma"].codeSyntax.iOS)
+				}
+			}
+
+			// TODO
+			// variable.setVariableCodeSyntax('WEB', 'example-variable-name')
+			// variable.setVariableCodeSyntax('ANDROID', 'exampleVariableName')
+			// variable.setVariableCodeSyntax('iOS', 'exampleVariableName')
+
 			// Any time we successfully make any updates, we need to loop again unless we completely finish.
 			keepGoing = true
 		}
