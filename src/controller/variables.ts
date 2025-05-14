@@ -308,11 +308,6 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 				}
 			}
 
-			// TODO
-			// variable.setVariableCodeSyntax('WEB', 'example-variable-name')
-			// variable.setVariableCodeSyntax('ANDROID', 'exampleVariableName')
-			// variable.setVariableCodeSyntax('iOS', 'exampleVariableName')
-
 			// Any time we successfully make any updates, we need to loop again unless we completely finish.
 			keepGoing = true
 		}
