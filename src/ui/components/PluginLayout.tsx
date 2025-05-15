@@ -37,7 +37,6 @@ const Header = styled.header`
 
 const Footer = styled.footer`
 	grid-row: -1;
-
 	border-top: 1px solid var(--figma-color-border, #e5e5e5);
 `
 

@@ -4,7 +4,7 @@ import { Content } from "./PluginLayout"
 
 export function Footer() {
 	return (
-		<Content bottom center>
+		<Content center>
 			<div>This is not a supported product. Hopefully it helps though.</div>
 			<div>
 				© 2025 Thierry Charbonnel

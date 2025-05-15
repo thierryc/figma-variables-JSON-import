@@ -102,9 +102,9 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 		}
 
 		// Local variables
-		const collectionsArray = figma.variables.getLocalVariableCollections()
+		const collectionsArray = await figma.variables.getLocalVariableCollectionsAsync()
 		for (const collection of collectionsArray) collections[collection.name] = collection
-		const variablesArray = figma.variables.getLocalVariables()
+		const variablesArray = await figma.variables.getLocalVariablesAsync()
 		for (const variable of variablesArray) variables[variable.name] = variable
 	}
 
@@ -188,7 +188,7 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 				}
 
 				// Then we can create the variable itself.
-				variable = figma.variables.createVariable(update.figmaName, collection.id, figmaType)
+				variable = figma.variables.createVariable(update.figmaName, collection, figmaType)
 				variables[update.figmaName] = variable
 				variablesCreated++
 			} else if (!("id" in variable)) {
@@ -196,7 +196,9 @@ export async function importTokens(files: Record<string, JsonTokenDocument>, man
 				continue
 			} else {
 				otherUpdatesCount++
-				collection = figma.variables.getVariableCollectionById(variable.variableCollectionId)!
+				const foundCollection = await figma.variables.getVariableCollectionByIdAsync(variable.variableCollectionId)
+				if (!foundCollection) throw new Error(`Variable collection not found for ID: ${variable.variableCollectionId}`)
+				collection = foundCollection
 			}
 			if (!modeId) {
 				const mode = collection.modes.find(obj => obj.name === update.modeName)
