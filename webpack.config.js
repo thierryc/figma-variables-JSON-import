@@ -35,7 +35,16 @@ module.exports = (env, argv) => ({
 			},
 			{
 				test: /\.(css|scss)$/,
-				use: ["style-loader", "css-loader", "sass-loader"],
+				use: [
+					"style-loader",
+					"css-loader",
+					{
+						loader: "sass-loader",
+						options: {
+							implementation: require("sass"),
+						},
+					},
+				],
 				exclude: /node_modules/,
 			},
 			{

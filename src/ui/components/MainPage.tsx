@@ -11,10 +11,46 @@ import Switch from "./Switch"
 export function MainPage() {
 	const Plugin = React.useContext(PluginContext)
 	const [results, setResults] = React.useState<OperationResult[]>([])
-	const [switchStatus, setSwitchStatus] = useState(false)
+	const [log, setLog] = useState<string[]>([])
+	// const [switchStatus, setSwitchStatus] = useState(false)
 
-	const handleSwitchChange = (newStatus: boolean) => {
-		setSwitchStatus(newStatus)
+	// const handleSwitchChange = (newStatus: boolean) => {
+	// 	setSwitchStatus(newStatus)
+	// }
+
+	const addLogMessage = (message: string) => {
+		setLog(prevLog => [...prevLog, message])
+	}
+
+	async function onFileChosen(files: FileList) {
+		const fileList: JsonFile[] = []
+		const newResults: OperationResult[] = []
+		try {
+			setResults([{ result: "info", text: `I have ${files.length} to parse and import. Thinking...` }])
+
+			for (const file of files) {
+				try {
+					const fileContents = await file.text()
+					fileList.push({ name: file.name, text: fileContents })
+				} catch (ex) {
+					newResults.push({ result: "error", text: `Failed to read the contents of ${file.name}.` })
+				}
+			}
+
+			if (fileList.length) newResults.push(...(await Plugin.importFiles(fileList)))
+
+			setResults(newResults)
+		} catch (ex) {
+			console.error(ex)
+			newResults.push({
+				result: "error",
+				text: `Failed to import the token files: ${
+					(ex && ((typeof ex === "object" && "message" in ex && ex.message) || (typeof ex === "string" && ex))) ||
+					"no further details available"
+				}`,
+			})
+			setResults(newResults)
+		}
 	}
 
 	return (
@@ -85,38 +121,6 @@ export function MainPage() {
 			</Content>
 		</>
 	)
-
-	async function onFileChosen(files: FileList) {
-		const fileList: JsonFile[] = []
-		const newResults: OperationResult[] = []
-
-		try {
-			setResults([{ result: "info", text: "Thinking..." }])
-
-			for (const file of files) {
-				try {
-					const fileContents = await file.text()
-					fileList.push({ name: file.name, text: fileContents })
-				} catch (ex) {
-					newResults.push({ result: "error", text: `Failed to read the contents of ${file.name}.` })
-				}
-			}
-
-			if (fileList.length) newResults.push(...(await Plugin.importFiles(fileList)))
-
-			setResults(newResults)
-		} catch (ex) {
-			console.error(ex)
-			newResults.push({
-				result: "error",
-				text: `Failed to import the token files: ${
-					(ex && ((typeof ex === "object" && "message" in ex && ex.message) || (typeof ex === "string" && ex))) ||
-					"no further details available"
-				}`,
-			})
-			setResults(newResults)
-		}
-	}
 }
 export default MainPage
 

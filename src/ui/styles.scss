@@ -1,3 +1,4 @@
+@use "sass:math";
 *,
 *:before,
 *:after {
@@ -17,7 +18,7 @@ body,
 body {
 	font-family: Inter, system-ui, sans-serif;
 	font-size: 11px;
-	line-height: (16px / 11px);
+	line-height: math.div(16px, 11px);
 	background-color: var(--figma-color-bg, #ffffff);
 	color: var(--figma-color-text, rgba(0, 0, 0, 0.9));
 }
