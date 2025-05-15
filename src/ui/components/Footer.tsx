@@ -7,22 +7,14 @@ export function Footer() {
 		<Content bottom center>
 			<div>This is not a supported product. Hopefully it helps though.</div>
 			<div>
-				© 2023 Microsoft
+				© 2025 Thierry Charbonnel
 				{" • "}
-				<StyledLink href="mailto:travis@microsoft.com?subject=Variables Import feedback" target="_blank">
+				<StyledLink href="mailto:thierry@anaotherplanet.io?subject=Variables Import feedback" target="_blank">
 					Feedback
 				</StyledLink>
 				{" • "}
-				<StyledLink href="https://github.com/microsoft/figma-variables-import" target="_blank">
+				<StyledLink href="https://github.com/thierryc/figma-variables-import" target="_blank">
 					GitHub
-				</StyledLink>
-				{" • "}
-				<StyledLink href="https://go.microsoft.com/fwlink/?linkid=521839" target="_blank">
-					Privacy
-				</StyledLink>
-				{" • "}
-				<StyledLink href="https://go.microsoft.com/fwlink/?linkid=206977" target="_blank">
-					Terms of use
 				</StyledLink>
 			</div>
 		</Content>

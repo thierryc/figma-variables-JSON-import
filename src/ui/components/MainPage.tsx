@@ -6,7 +6,7 @@ import { FileDropZone } from "./FileDropZone"
 import { Import } from "./Icons"
 import { Content } from "./PluginLayout"
 import FileUpload from "./FileUpload"
-import Switch from "./Switch"
+// import Switch from "./Switch"
 
 export function MainPage() {
 	const Plugin = React.useContext(PluginContext)

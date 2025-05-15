@@ -1,4 +1,20 @@
-# Variables Import
+# figma-variables-JSON-import
+
+## Fork & Disclaimer
+
+**figma-variables-JSON-import** is a fork of [microsoft/figma-variables-import](https://github.com/microsoft/figma-variables-import), now maintained by Thierry Charbonnel.
+
+## Changes since Microsoft’s version
+
+-   Renamed `figma-variables-import` → **figma-variables-json-import**
+-   Added Node.js ≥ 20 support
+-   Added browse button to import JSON files
+-   Added support for scoped tokens and code syntax
+-   Minor UI improvements
+
+> **Disclaimer:** This project is not affiliated with or endorsed by Microsoft Corporation.
+
+Thanks to Travis Spomer <travis@microsoft.com> for the original version.
 
 This Figma plugin allows you to import design tokens in the [Design Token Community Group](https://design-tokens.github.io/community-group/format/) format as Figma Variables.
 
@@ -9,12 +25,17 @@ The following token types are supported:
 -   `string`
 -   `number`, `dimension`, `duration`
 -   `boolean`
--   `string`
 -   Aliases to any other supported token in the same JSON and Figma file
 
 The following are supported **only** when running a local copy of this plugin, not from the Figma Community:
 
 -   Aliases to any other supported token in a different JSON file and Figma file, if the other Figma file has published the variables to a team library
+
+## Prerequisites
+
+-   Node.js ≥ 20.0.0
+-   npm ≥ 8.x
+-   Figma desktop app or Figma web with plugin support
 
 ## Setup
 
@@ -56,18 +77,29 @@ npm run build
 
 `enableProposedApi` **cannot** be used in a plugin published to the Figma community, even internal to your own organization.
 
-### Adding to Figma
+# Adding to Figma
 
 Add this plugin to Figma using "[import new plugin from manifest](https://help.figma.com/hc/en-us/articles/360042786733-Create-a-plugin-for-development)".
 
+## Usage
+
+1. Open your Figma file.
+2. Go to **Plugins › Development › Import plugin from manifest**.
+3. Run **Figma Variables Import** from the Plugins menu.
+4. Select your design tokens JSON file to import.
+
 ---
 
-# The legal stuff
+## License & Trademarks
 
-© 2023 Microsoft. MIT license.
+Copyright (c) Microsoft Corporation.
+Copyright (c) 2025 Thierry Charbonnel.
+MIT License.
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft trademarks or logos is subject to and must follow Microsoft's [Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general). Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship. Any use of third-party trademarks or logos are subject to those third-party's policies.
+“Microsoft” is a registered trademark of Microsoft Corporation. This fork does **not** use any Microsoft trademarks beyond the attribution required by the MIT license and is **not** affiliated with or endorsed by Microsoft.
 
-node 20.0.0 to build
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for guidelines.

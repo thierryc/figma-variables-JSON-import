@@ -1,13 +1,16 @@
 {
-	"name": "figma-variables-import",
+	"name": "figma-variables-json-import",
 	"version": "0.2.0",
-	"description": "Variables Import",
+	"description": "Variables JSON Import",
 	"homepage": "https://www.figma.com/community/plugin/1253424530216967528",
-	"author": "Travis Spomer <travis@microsoft.com>",
+	"author": "Thierry Charbonnel <thierryc@example.com>",
+	"contributors": [
+		"Travis Spomer <travis@microsoft.com>"
+	],
 	"private": true,
 	"repository": {
 		"type": "private",
-		"url": "https://github.com/microsoft/figma-variables-import"
+		"url": "https://github.com/thierryc/figma-variables-import"
 	},
 	"scripts": {
 		"analyze": "npx webpack --mode production --profile --json > profile.json && npx webpack-bundle-analyzer profile.json build",

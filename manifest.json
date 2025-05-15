@@ -1,6 +1,6 @@
 {
-	"name": "Variables Import",
-	"id": "1253424530216967528",
+	"name": "Variables JSON Import",
+	"id": "1504783439805484760",
 	"api": "1.0.0",
 	"permissions": ["teamlibrary"],
 	"main": "build/controller.js",
