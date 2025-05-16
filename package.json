@@ -7,12 +7,14 @@
 	"contributors": [
 		"Travis Spomer <travis@microsoft.com>"
 	],
+	"license": "MIT",
 	"private": true,
 	"repository": {
 		"type": "private",
-		"url": "https://github.com/thierryc/figma-variables-import"
+		"url": "https://github.com/thierryc/figma-variables-JSON-import"
 	},
 	"scripts": {
+		"clean": "rimraf build",
 		"analyze": "npx webpack --mode production --profile --json > profile.json && npx webpack-bundle-analyzer profile.json build",
 		"build": "npx webpack --mode production",
 		"build:watch": "npx webpack --mode development --watch",
